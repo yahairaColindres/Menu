@@ -5,9 +5,18 @@ const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+
+// CORS: en producción solo permite el dominio Railway; en local permite todo
+const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? [process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null].filter(Boolean)
+    : true; // true = permite cualquier origen en desarrollo
+
+app.use(cors(allowedOrigins === true ? undefined : { origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Health check para Railway
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Importar rutas
 const categoriasRoutes = require('./routes/categorias');
