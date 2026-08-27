@@ -9,14 +9,28 @@ function App() {
     const [mobileOpen, setMobileOpen] = useState(false);
 
     const navItems = [
-        { id: 'menu', label: 'Menú Semanal', icon: '📅' },
-        { id: 'compras', label: 'Lista de Compras', icon: '🛒' },
-        { id: 'recetas', label: 'Recetas', icon: '📖' },
-        { id: 'categorias', label: 'Categorías', icon: '🏷️' },
+        { id: 'menu',      label: 'Menú',      icon: '📅' },
+        { id: 'compras',   label: 'Compras',   icon: '🛒' },
+        { id: 'recetas',   label: 'Recetas',   icon: '📖' },
+        { id: 'categorias',label: 'Categorías',icon: '🏷️' },
     ];
+
+    const handleNav = (id) => {
+        setActiveTab(id);
+        setMobileOpen(false);
+    };
 
     return (
         <div className="app-layout">
+            {/* Overlay oscuro cuando sidebar está abierto en móvil */}
+            {mobileOpen && (
+                <div
+                    className="sidebar-overlay"
+                    onClick={() => setMobileOpen(false)}
+                />
+            )}
+
+            {/* Sidebar (desktop siempre visible, móvil deslizable) */}
             <div className={`sidebar ${mobileOpen ? 'open' : ''}`}>
                 <div className="sidebar-logo">
                     <h1>Menú + Compra</h1>
@@ -27,7 +41,7 @@ function App() {
                         <button
                             key={item.id}
                             className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-                            onClick={() => { setActiveTab(item.id); setMobileOpen(false); }}
+                            onClick={() => handleNav(item.id)}
                         >
                             <span>{item.icon}</span>
                             <span className="nav-label">{item.label}</span>
@@ -38,16 +52,29 @@ function App() {
                     <small>© 2025 · Tu cocina inteligente</small>
                 </div>
             </div>
+
+            {/* Contenido principal */}
             <div className="main-content">
-                <div className="mobile-toggle" style={{ padding: '12px 20px', background: '#fff', borderBottom: '1px solid var(--border)' }}>
-                    <button className="btn-icon" onClick={() => setMobileOpen(!mobileOpen)}>☰</button>
-                    <span>{navItems.find(i => i.id === activeTab)?.label}</span>
-                </div>
-                {activeTab === 'menu' && <MenuSemanal />}
-                {activeTab === 'compras' && <ListaCompras />}
-                {activeTab === 'recetas' && <Recetas />}
+                {activeTab === 'menu'       && <MenuSemanal />}
+                {activeTab === 'compras'    && <ListaCompras />}
+                {activeTab === 'recetas'    && <Recetas />}
                 {activeTab === 'categorias' && <Categorias />}
             </div>
+
+            {/* Bottom Navigation Bar — solo visible en móvil (CSS la muestra/oculta) */}
+            <nav className="bottom-nav">
+                {navItems.map(item => (
+                    <button
+                        key={item.id}
+                        className={`bottom-nav-item ${activeTab === item.id ? 'active' : ''}`}
+                        onClick={() => handleNav(item.id)}
+                        aria-label={item.label}
+                    >
+                        <span className="nav-icon">{item.icon}</span>
+                        <span className="bottom-nav-label">{item.label}</span>
+                    </button>
+                ))}
+            </nav>
         </div>
     );
 }
