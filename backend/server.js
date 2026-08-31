@@ -6,12 +6,24 @@ require('dotenv').config();
 
 const app = express();
 
-// CORS: en producción solo permite el dominio Railway; en local permite todo
-const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? [process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null].filter(Boolean)
-    : true; // true = permite cualquier origen en desarrollo
+// CORS: en producción permite el dominio del frontend (FRONTEND_URL); en local permite todo
+const corsOptions = process.env.NODE_ENV === 'production'
+    ? {
+        origin: (origin, callback) => {
+            const allowed = process.env.FRONTEND_URL
+                ? process.env.FRONTEND_URL.split(',').map(u => u.trim())
+                : [];
+            if (!origin || allowed.length === 0 || allowed.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true
+    }
+    : undefined; // undefined = permite todo en desarrollo
 
-app.use(cors(allowedOrigins === true ? undefined : { origin: allowedOrigins, credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
