@@ -1,9 +1,9 @@
 {
-  "name": "menu-compras-fullstack",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install",
-    "start": "npm --prefix backend start"
-  }
+    "name": "menu-compras-fullstack",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+          "build": "npm --prefix frontend install --include=dev && npm --prefix frontend run build && npm --prefix backend install",
+          "start": "npm --prefix backend start"
+    }
 }
