@@ -34,7 +34,6 @@ export default function Categorias() {
         load();
         setConfirmOpen(null);
     };
-
     return (
         <div>
             <div className="page-header">
@@ -70,10 +69,10 @@ export default function Categorias() {
                 </div>
             </div>
 
-            <Modal 
-                isOpen={modalOpen} 
-                onClose={() => setModalOpen(false)} 
-                title={editing ? '✏️ Editar categoría' : '🍗 Nueva Categoría'} 
+            <Modal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                title={editing ? '✏️ Editar categoría' : '🍗 Nueva Categoría'}
                 onConfirm={handleSubmit}
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-2)', padding: '10px', borderRadius: '8px', marginBottom: 12 }}>
