@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 *,
 *::before,
@@ -35,6 +35,7 @@
 
 html {
     font-size: 16px;
+    overflow-x: hidden;
 }
 
 body {
@@ -44,6 +45,7 @@ body {
     min-height: 100vh;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
 /* ─── Layout ─────────────────────────────────────── */
@@ -1180,6 +1182,14 @@ body {
 
 @media (max-width: 900px) {
 
+    /* Evitar cualquier desbordamiento horizontal */
+    .app-layout,
+    .main-content,
+    .page-body {
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+
     /* Sidebar: oculto por defecto, se desliza */
     .sidebar {
         position: fixed;
@@ -1247,24 +1257,22 @@ body {
     .modal-title { font-size: 1.2rem; }
     .confirm-dialog { max-width: 100%; width: 100%; border-radius: 24px 24px 0 0; }
 
-    /* Menu semanal: scroll horizontal */
+    /* Menu semanal: columnas apiladas verticalmente en movil */
     .menu-grid {
         display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        gap: 0;
-        border-radius: var(--radius);
-        -webkit-overflow-scrolling: touch;
-        scroll-snap-type: x mandatory;
+        flex-direction: column;
+        gap: 12px;
+        overflow-x: hidden;
     }
-    .menu-grid::-webkit-scrollbar { display: none; }
     .menu-day-col {
-        flex: 0 0 80vw;
-        max-width: 300px; min-width: 240px;
-        border-right: 1px solid var(--border);
-        scroll-snap-align: start;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        scroll-snap-align: unset;
     }
-    .menu-day-col:last-child { border-right: none; }
+    .menu-day-col:last-child { border-bottom: none; }
 
     /* Recetas: 2 columnas */
     .recipe-grid {
