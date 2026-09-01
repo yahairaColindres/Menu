@@ -44,6 +44,7 @@ export const deleteItemCompra = (id) => API.delete(`/lista-compras/${id}`);
 
 export const updateItemEstado = (id, estado) => API.patch(`/lista-compras/${id}/estado`, { estado });
 export const toggleListaItem = (id) => API.patch(`/lista-compras/${id}/toggle`);
+export const toggleNecesario = (id) => API.patch(`/lista-compras/${id}/necesario`);
 export const clearComprados = () => API.delete('/lista-compras/clear-comprados');
 export const addIngredientes = (data) => API.post('/lista-compras/add-ingredientes', data);
 export const useIngredientes = (data) => API.post('/lista-compras/use-ingredientes', data);

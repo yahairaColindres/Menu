@@ -11,9 +11,10 @@ router.get('/', async (req, res) => {
             LEFT JOIN categorias c ON l.categoria_id = c.id 
             ORDER BY 
                 CASE 
-                    WHEN l.estado = 'comprado' THEN 1 
-                    WHEN l.estado = 'usado' THEN 2 
-                    ELSE 3 
+                    WHEN l.necesario = 1 AND l.estado != 'comprado' THEN 1
+                    WHEN l.estado = 'comprado' THEN 2
+                    WHEN l.estado = 'usado' THEN 3 
+                    ELSE 4
                 END ASC, l.id DESC
         `);
         res.json(rows);
@@ -24,15 +25,16 @@ router.get('/', async (req, res) => {
 
 // Crear
 router.post('/', async (req, res) => {
-    const { nombre, cantidad, categoria_id, estado } = req.body;
+    const { nombre, cantidad, categoria_id, estado, necesario } = req.body;
     try {
         const estadoFinal = estado || 'pendiente';
         const compradoFinal = estadoFinal === 'comprado' ? 1 : 0;
+        const necesarioFinal = necesario ? 1 : 0;
         const [result] = await db.query(
-            'INSERT INTO lista_compras (nombre, cantidad, categoria_id, estado, comprado) VALUES (?, ?, ?, ?, ?)',
-            [nombre, cantidad || '', categoria_id || null, estadoFinal, compradoFinal]
+            'INSERT INTO lista_compras (nombre, cantidad, categoria_id, estado, comprado, necesario) VALUES (?, ?, ?, ?, ?, ?)',
+            [nombre, cantidad || '', categoria_id || null, estadoFinal, compradoFinal, necesarioFinal]
         );
-        res.json({ id: result.insertId, nombre, cantidad, estado: estadoFinal, comprado: compradoFinal });
+        res.json({ id: result.insertId, nombre, cantidad, estado: estadoFinal, comprado: compradoFinal, necesario: necesarioFinal });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -53,6 +55,19 @@ router.patch('/:id/estado', async (req, res) => {
     }
 });
 
+// Toggle necesario
+router.patch('/:id/necesario', async (req, res) => {
+    try {
+        const [item] = await db.query('SELECT necesario FROM lista_compras WHERE id = ?', [req.params.id]);
+        if (item.length === 0) return res.status(404).json({ error: 'No encontrado' });
+        const nuevoNecesario = item[0].necesario ? 0 : 1;
+        await db.query('UPDATE lista_compras SET necesario = ? WHERE id = ?', [nuevoNecesario, req.params.id]);
+        res.json({ success: true, necesario: nuevoNecesario });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Toggle clásico (comprado <-> pendiente)
 router.patch('/:id/toggle', async (req, res) => {
     try {
@@ -61,8 +76,6 @@ router.patch('/:id/toggle', async (req, res) => {
         
         let nuevoEstado;
         if (item[0].estado === 'comprado') {
-            nuevoEstado = 'usado';
-        } else if (item[0].estado === 'usado') {
             nuevoEstado = 'pendiente';
         } else {
             nuevoEstado = 'comprado';
@@ -78,12 +91,13 @@ router.patch('/:id/toggle', async (req, res) => {
 
 // Actualizar ítem
 router.put('/:id', async (req, res) => {
-    const { nombre, cantidad, categoria_id, estado } = req.body;
+    const { nombre, cantidad, categoria_id, estado, necesario } = req.body;
     try {
         const estadoFinal = estado || 'pendiente';
         const compradoFlag = estadoFinal === 'comprado' ? 1 : 0;
-        await db.query('UPDATE lista_compras SET nombre = ?, cantidad = ?, categoria_id = ?, estado = ?, comprado = ? WHERE id = ?',
-            [nombre, cantidad, categoria_id || null, estadoFinal, compradoFlag, req.params.id]);
+        const necesarioFlag = necesario ? 1 : 0;
+        await db.query('UPDATE lista_compras SET nombre = ?, cantidad = ?, categoria_id = ?, estado = ?, comprado = ?, necesario = ? WHERE id = ?',
+            [nombre, cantidad, categoria_id || null, estadoFinal, compradoFlag, necesarioFlag, req.params.id]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -110,10 +124,7 @@ router.delete('/clear-comprados', async (req, res) => {
     }
 });
 
-// Sincronizar ingredientes al aplicar una receta al menú semanal:
-// Si no existe el ingrediente, se crea automáticamente en estado PENDIENTE (🔴).
-// Si existe y NO está comprado, se asegura de estar en estado PENDIENTE (🔴).
-// Si existe y SÍ está comprado, se pasa a USADO (🟡).
+// Sincronizar ingredientes al aplicar una receta al menú semanal
 router.post('/use-ingredientes', async (req, res) => {
     const { ingredientes } = req.body;
     if (!ingredientes || !ingredientes.length) return res.json({ success: true });
@@ -132,21 +143,49 @@ router.post('/use-ingredientes', async (req, res) => {
             );
 
             if (existing.length === 0) {
-                // No existe -> Agregar automáticamente a la lista de compras en estado PENDIENTE (🔴)
                 await db.query(
-                    "INSERT INTO lista_compras (nombre, cantidad, comprado, estado, categoria_id) VALUES (?, '', 0, 'pendiente', ?)",
+                    "INSERT INTO lista_compras (nombre, cantidad, comprado, estado, categoria_id, necesario) VALUES (?, '', 0, 'pendiente', ?, 0)",
                     [cleanName, defaultCatId]
                 );
             } else {
                 const item = existing[0];
                 const isComprado = item.estado === 'comprado' || item.comprado === 1;
                 if (isComprado) {
-                    // Si ya está comprado, pasa a USADO (🟡) para indicar que se usará en la receta
                     await db.query("UPDATE lista_compras SET estado = 'usado', comprado = 0 WHERE id = ?", [item.id]);
                 } else {
-                    // Si no está comprado, se asegura que esté en PENDIENTE (🔴)
                     await db.query("UPDATE lista_compras SET estado = 'pendiente', comprado = 0 WHERE id = ?", [item.id]);
                 }
+            }
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Agregar ingredientes a la lista
+router.post('/add-ingredientes', async (req, res) => {
+    const { ingredientes } = req.body;
+    if (!ingredientes || !ingredientes.length) return res.json({ success: true });
+    try {
+        const [catRow] = await db.query("SELECT id FROM categorias WHERE nombre = 'Vegetales' LIMIT 1");
+        const defaultCatId = catRow.length > 0 ? catRow[0].id : 1;
+
+        for (let ing of ingredientes) {
+            const ingNombre = typeof ing === 'string' ? ing : ing.nombre;
+            if (!ingNombre || !ingNombre.trim()) continue;
+            const cleanName = ingNombre.trim();
+
+            const [existing] = await db.query(
+                "SELECT id FROM lista_compras WHERE LOWER(TRIM(nombre)) = LOWER(?)",
+                [cleanName]
+            );
+
+            if (existing.length === 0) {
+                await db.query(
+                    "INSERT INTO lista_compras (nombre, cantidad, comprado, estado, categoria_id, necesario) VALUES (?, '', 0, 'pendiente', ?, 0)",
+                    [cleanName, defaultCatId]
+                );
             }
         }
         res.json({ success: true });
