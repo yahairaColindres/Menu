@@ -413,16 +413,21 @@ export default function Recetas({ onSelectReceta, seleccionModo = false }) {
                     
                     <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
                         {form.ingredientes.map((ing, index) => (
-                            <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 100px auto', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                            <div key={index} className="ingredient-input-row">
                                 <input 
                                     className="input" 
                                     list="productos-compras-list"
-                                    placeholder="Nombre del producto / ingrediente" 
+                                    placeholder="Nombre del ingrediente" 
                                     value={ing.nombre} 
                                     onChange={e => updateFormIngredient(index, 'nombre', e.target.value)} 
                                 />
-                                <input className="input" placeholder="Cant." value={ing.cantidad} onChange={e => updateFormIngredient(index, 'cantidad', e.target.value)} />
-                                <button type="button" className="btn-danger btn-sm" onClick={() => removeFormIngredient(index)}>🗑️</button>
+                                <input 
+                                    className="input" 
+                                    placeholder="Cant." 
+                                    value={ing.cantidad} 
+                                    onChange={e => updateFormIngredient(index, 'cantidad', e.target.value)} 
+                                />
+                                <button type="button" className="btn-danger btn-sm" onClick={() => removeFormIngredient(index)} title="Eliminar">🗑️</button>
                             </div>
                         ))}
                         {form.ingredientes.length === 0 && <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: '0.85rem', padding: '12px 0' }}>No se han añadido ingredientes</div>}
