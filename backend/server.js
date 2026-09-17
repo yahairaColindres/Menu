@@ -54,3 +54,22 @@ if (fs.existsSync(frontendDist)) {
 
 const PORT = process.env.PORT || 7001;
 app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+
+// Keep-alive a la base de datos cada 4 minutos para evitar timeout de sockets
+const db = require('./db');
+setInterval(async () => {
+    try {
+        await db.query('SELECT 1');
+    } catch (e) {
+        console.warn('⚠️ [DB KEEPALIVE] Ping fallido:', e.message);
+    }
+}, 4 * 60 * 1000);
+
+// Prevenir caídas del proceso por errores no capturados o desconexiones
+process.on('uncaughtException', (err) => {
+    console.error('💥 [CRASH PREVENTION] Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('💥 [CRASH PREVENTION] Unhandled Rejection:', reason);
+});

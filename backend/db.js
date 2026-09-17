@@ -16,6 +16,8 @@ if (process.env.DATABASE_URL) {
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000,
         ssl: { rejectUnauthorized: false }
     });
 } else {
@@ -28,8 +30,15 @@ if (process.env.DATABASE_URL) {
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000,
         ssl: (process.env.DB_SSL === 'true' || process.env.DB_SSL === '1') ? { rejectUnauthorized: false } : undefined
     });
 }
+
+// Prevenir que un error de socket en conexión inactiva tumbe el proceso Node
+pool.on('error', (err) => {
+    console.error('⚠️ [DB POOL ERROR] Error inesperado en el pool de base de datos:', err.message);
+});
 
 module.exports = pool.promise();
