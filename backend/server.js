@@ -55,6 +55,17 @@ if (fs.existsSync(frontendDist)) {
 const PORT = process.env.PORT || 7001;
 app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
 
+// Auto-ping para mantener Render despierto 24/7 sin necesidad de servicios externos
+const appUrl = process.env.RENDER_EXTERNAL_URL || 'https://menu-compras.onrender.com';
+setInterval(async () => {
+    try {
+        const res = await fetch(`${appUrl}/health`);
+        if (res.ok) console.log('⏰ [AUTO-PING] Servidor activo (Render despierto)');
+    } catch (e) {
+        console.warn('⚠️ [AUTO-PING] Fallo ping interno:', e.message);
+    }
+}, 10 * 60 * 1000);
+
 // Keep-alive a la base de datos cada 4 minutos para evitar timeout de sockets
 const db = require('./db');
 setInterval(async () => {
